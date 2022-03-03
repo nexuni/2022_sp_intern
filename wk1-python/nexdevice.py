@@ -59,7 +59,7 @@ class NexDevice(object):
 		pass
 
 	@classmethod
-	def create_nexdevice_from_dump(dump_string):
+	def create_nexdevice_from_dump(cls,dump_string):
 		"""
 		Create a NexDevice object based on deviceinfo
 		encoded in dump_string.
@@ -71,7 +71,7 @@ class NexDevice(object):
 		"""
 		pass
 
-	def get_battery_percentage():
+	def get_battery_percentage(self):
 		"""
 		Return battery voltage. 
 		Output:
@@ -79,7 +79,7 @@ class NexDevice(object):
 		"""
 		pass
 
-	def get_docker_version():
+	def get_docker_version(self):
 		"""
 		Return docker version string. 
 		Output:
@@ -88,7 +88,7 @@ class NexDevice(object):
 		"""
 		pass
 
-	def get_ip_search_range(subnet):
+	def get_ip_search_range(self,subnet):
 		"""
 		Given ipv4 subnet, return a tuple
 		of start search ip and end search ip
@@ -101,7 +101,7 @@ class NexDevice(object):
 		"""
 		pass
 
-	def get_service_status(srv):
+	def get_service_status(self,srv):
 		"""
 		Get the status of service `srv`
 		Input:
@@ -111,7 +111,7 @@ class NexDevice(object):
 		"""
 		pass
 
-	def start_service(srv):
+	def start_service(self,srv):
 		"""
 		Go through the services on this device
 		and start the service `srv`
@@ -120,7 +120,7 @@ class NexDevice(object):
 		"""
 		pass
 
-	def stop_service(srv):
+	def stop_service(self,srv):
 		"""
 		Go through the services on this device
 		and stop the service `srv`
