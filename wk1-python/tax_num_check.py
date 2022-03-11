@@ -10,8 +10,19 @@ def check_taiwan_tax_id(tax_id):
     Output
         - boolean
     """
-
-
+    weight = [1, 2, 1, 2, 1, 2, 4, 1]
+    id_list = [int(a) for a in str(tax_id)]
+    if len(weight) != len(id_list):
+        return False
+    else:
+        product = list(map(lambda x,y: x*y ,weight,id_list))
+        summation = sum(map(lambda x: x%10+ x//10, product))
+        if summation%10==0:
+            return True
+        elif id_list[6] == 7 and (summation+1)%10 ==0:
+            return True
+        else:
+            return False
 
 
 
