@@ -1,32 +1,31 @@
 import Famcy
 import datetime
 
-
-
-class ProjectPage(Famcy.FamcyPage):
+class StartPage(Famcy.FamcyPage):
     def __init__(self):
-        super(ProjectPage, self).__init__()
+        super(StartPage, self).__init__()
 
         # for declaration
         # ===============
         self.table_info = []
-        self.used_password = []
+        self.used_password = {}
+        self.store_delete = []
 
         self.card1 = self.card1()
         self.card2 = self.card2()
-
 
         self.layout.addWidget(self.card1, 0, 0)
         self.layout.addWidget(self.card2, 3, 0)
 
         self.pcard1 = self.pcard1()
         self.p_update_card = self.p_update_card()
+        self.p_card_delete = self.p_card_delete()
+        self.confirm_delete = self.confirm_delete()
 
         self.layout.addStaticWidget(self.p_update_card)
         self.layout.addStaticWidget(self.pcard1)
-
-        
-
+        self.layout.addStaticWidget(self.p_card_delete)
+        self.layout.addStaticWidget(self.confirm_delete)
 
         # ===============
 
@@ -67,6 +66,12 @@ class ProjectPage(Famcy.FamcyPage):
         insert_btn.update({"title": "新增使用者資料"})
         insert_btn.connect(self.inputBtn_submit)
 
+        state = Famcy.displayParagraph()
+        state.update({
+                "title": "",
+                "content": ""
+            })
+
         _displayParagraph = Famcy.displayParagraph()
         _displayParagraph.update({
                 "title": "",
@@ -81,7 +86,8 @@ class ProjectPage(Famcy.FamcyPage):
 
 
         card1.layout.addWidget(input_form, 0, 0)
-        card1.layout.addWidget(_displayParagraph, 1, 0)
+        card1.layout.addWidget(state, 1, 0)
+        card1.layout.addWidget(_displayParagraph, 2, 0)
 
         return card1
     def card2(self):
@@ -152,7 +158,7 @@ class ProjectPage(Famcy.FamcyPage):
 
         cancel_btn = Famcy.submitBtn()
         cancel_btn.update({"title": "刪除使用者資料"})
-        # cancel_btn.connect(self.delete_info, target=self.p_del_card)
+        cancel_btn.connect(self.delete_info)  # , target=self.p_del_card
 
         input_form.layout.addWidget(table_content, 0, 0, 1, 2)
         input_form.layout.addWidget(new_btn, 1, 0)
@@ -250,29 +256,62 @@ class ProjectPage(Famcy.FamcyPage):
 
         return p_card
     
-    # def p_card_delete(self):
-    #     pcard = Famcy.FamcyPromptCard()
+    def p_card_delete(self):
+        pcard = Famcy.FamcyPromptCard()
 
-    #     input_form = Famcy.input_form()
+        input_form = Famcy.input_form()
+        
+        input_id = Famcy.pureInput()
+        input_id.update({"title": "輸入使用者帳號"})
 
-    #     text_msg = Famcy.displayParagraph()
-    #     text_msg.update({"title": "確認是否執行?", "content": ""})
+        input_password = Famcy.inputPassword()
+        input_password.update({
+                "title": "輸入使用者密碼",
+                "desc": "",
+                "mandatory": False,
+                "action_after_post": "clean",
+            })
 
-    #     confirm_btn = Famcy.submitBtn()
-    #     confirm_btn.update({"title":"確認"})
-    #     confirm_btn.connect(self.delete_info)
+        confirm_btn = Famcy.submitBtn()
+        confirm_btn.update({"title":"送出"})
+        confirm_btn.connect(self.update_delete, target=pcard)
 
-    #     cancel_btn = Famcy.submitBtn()
-    #     cancel_btn.update({"title":"取消"})
-    #     cancel_btn.connect(self.prompt_remove_input)
+        cancel_btn = Famcy.submitBtn()
+        cancel_btn.update({"title":"取消"})
+        cancel_btn.connect(self.remove_pcard)
 
-    #     input_form.layout.addWidget(text_msg, 0, 0, 1, 2)
-    #     input_form.layout.addWidget(confirm_btn, 1, 0)
-    #     input_form.layout.addWidget(cancel_btn, 1, 1)
+        input_form.layout.addWidget(input_id, 0, 0, 1, 2)
+        input_form.layout.addWidget(input_password, 1, 0, 1, 2)
+        input_form.layout.addWidget(confirm_btn, 2, 1)
+        input_form.layout.addWidget(cancel_btn, 2, 0)
 
-    #     pcard.layout.addWidget(input_form, 0, 0)
+        pcard.layout.addWidget(input_form, 0, 0)
 
-    #     return pcard
+        return pcard
+
+    def confirm_delete(self):
+        pcard = Famcy.FamcyPromptCard()
+
+        input_form = Famcy.input_form()
+
+        text_msg = Famcy.displayParagraph()
+        text_msg.update({"title": "確認是否執行?", "content": ""})
+
+        confirm_btn = Famcy.submitBtn()
+        confirm_btn.update({"title":"確認"})
+        confirm_btn.connect(self.delete_execute)
+
+        cancel_btn = Famcy.submitBtn()
+        cancel_btn.update({"title":"取消"})
+        cancel_btn.connect(self.remove2_pcard)
+
+        input_form.layout.addWidget(text_msg, 0, 0, 1, 2)
+        input_form.layout.addWidget(confirm_btn, 1, 1)
+        input_form.layout.addWidget(cancel_btn, 1, 0)
+
+        pcard.layout.addWidget(input_form, 0, 0)
+
+        return pcard
     # ====================================================
     # ====================================================
 
@@ -281,40 +320,71 @@ class ProjectPage(Famcy.FamcyPage):
     # ====================================================
     
     def inputInfo_submit(self, submission_obj, info_list):
-        msg = "資料填寫有誤"
+        msg = "系統錯誤"
         flag = True
-         
-        if info_list[0][0] == [] or info_list[1][0] == []:
-            flag = False
-        elif self.table_info == []:
+        
+        if self.table_info == []:
             msg = "目前資料庫沒有資料"
-            flag = True
+            flag = False 
+        elif info_list[0][0] == "" or info_list[1][0] == "":
+            msg = "資料填寫有誤"
+            flag = False   
 
         if flag :
             for i in range(0,len(self.table_info)) :
                 if str(info_list[0][0]) == self.table_info[i]["_id"]:
                     if str(info_list[1][0]) == self.table_info[i]["_password"]:
                         msg = "查詢成功"
-                        self.card1.layout.content[1][0].update({
+                        self.card1.layout.content[2][0].update({
                             "title": "查詢結果",
-                            "content": "使用者帳號: " + self.table_info[i]["_id"] + "</br>當前密碼: " + self.table_info[i]["_password"] + "</br>輸入錯誤次數: " + str(self.table_info[i]["_error_number"]) +"</br>最近修改密碼時間: "+ self.table_info[i]["_change_pw_time"]
+                            "content": "使用者帳號: " + self.table_info[i]["_id"] + "</br>當前密碼: " + self.table_info[i]["_password"] + "</br>輸入錯誤次數: " + str(self.table_info[i]["_error_number"]) +"</br>最近修改密碼時間: "+ self.table_info[i]["_change_pw_time"]+"</br>使用過的密碼: "+ str(self.used_password[self.table_info[i]["_id"]])
                         })
                     else:
                         self.table_info[i]["_error_number"] +=1
                         msg = "密碼錯誤"
-        return [Famcy.UpdateAlert(alert_message=msg), Famcy.UpdateBlockHtml(target=self.card1),Famcy.UpdateBlockHtml(target=self.card2)]
-    
-    # def submit_pcard(self, submission_obj, info_list):
-    #     return Famcy.UpdatePrompt(target=self.pcard1)
+        self.card1.layout.content[1][0].update({
+                            "title": "狀態訊息" ,
+                            "content":msg
+                        })
+        return [Famcy.UpdateBlockHtml(target=self.card2),Famcy.UpdateBlockHtml(target=self.card1)]
 
     def remove_pcard(self, submission_obj, info_list):
         return Famcy.UpdateRemoveElement(prompt_flag=True)
+    
+    def remove2_pcard(self, submission_obj, info_list):
+        return [Famcy.UpdateRemoveElement(prompt_flag=True),Famcy.UpdateRemoveElement(prompt_flag=True)]
     
     def inputBtn_submit(self, submission_obj, info_list):
         return Famcy.UpdatePrompt(target=self.pcard1)
     
     def update_info(self, submission_obj, info_list):
         return Famcy.UpdatePrompt(target=self.p_update_card)
+    
+    def update_modify(self, submission_obj, info_list):
+        msg = "資料填寫有誤"
+        flag = True
+         
+        if info_list[0][0] == "" or info_list[1][0] == "" or info_list[2][0] == "" :
+            flag = False
+        elif self.table_info == []:
+            msg = "目前資料庫沒有資料"
+            flag = False
+        elif info_list[1][0]==info_list[2][0]:
+            msg = "新密碼與舊密碼重複"
+            flag = False
+
+        if flag :
+            for i in range(0,len(self.table_info)) :
+                if str(info_list[0][0]) == self.table_info[i]["_id"]:
+                    if (str(info_list[1][0]) == self.table_info[i]["_password"]) :
+                        msg = "修改成功"
+                        self.table_info[i]["_password"] = str(info_list[2][0])
+                        self.table_info[i]["_change_pw_time"] = str(datetime.datetime.now())
+                        self.used_password[str(info_list[0][0])].append(str(info_list[2][0]))
+                    else:
+                        self.table_info[i]["_error_number"] +=1
+                        msg = "密碼錯誤"
+        return [Famcy.UpdateAlert(alert_message=msg), Famcy.UpdateBlockHtml(target=self.card2)]
 
     def insert_info(self, submission_obj, info_list):
         msg = "資料填寫有誤"
@@ -335,54 +405,44 @@ class ProjectPage(Famcy.FamcyPage):
                         "_error_number": 0,
                         "_change_pw_time": str(datetime.datetime.now())
                         })
-            self.used_password.append(str(info_list[1][0]))
+            self.used_password [str(info_list[0][0])] = [ str(info_list[1][0])]
             msg = "成功加入資料"
             self.card2.layout.content[0][0].layout.content[0][0].update({
                         "data": self.table_info
                         })
         return [Famcy.UpdateAlert(alert_message=msg), Famcy.UpdateBlockHtml(target=self.card2)]
-    
-    def update_modify(self, submission_obj, info_list):
+
+    def delete_info(self, submission_obj, info_list):
+        return Famcy.UpdatePrompt(target=self.p_card_delete)
+
+    def update_delete(self, submission_obj, info_list):
         msg = "資料填寫有誤"
         flag = True
          
-        if info_list[0][0] == [] or info_list[1][0] == []:
+        if info_list[0][0] == [] or info_list[1][0] == "" :
             flag = False
         elif self.table_info == []:
             msg = "目前資料庫沒有資料"
-            flag = True
+            flag = False
 
         if flag :
             for i in range(0,len(self.table_info)) :
                 if str(info_list[0][0]) == self.table_info[i]["_id"]:
-                    if str(info_list[1][0]) == self.table_info[i]["_password"]:
-                        msg = "修改成功"
-                        self.table_info[i]["_password"] = str(info_list[2][0])
-                        self.table_info[i]["_change_pw_time"] = str(datetime.datetime.now())
-                        self.used_password.append(str(info_list[2][0]))
+                    if (str(info_list[1][0]) == self.table_info[i]["_password"]) :
+                        self.store_delete.append(str(info_list[0][0]))
+                        return Famcy.UpdatePrompt(target=self.confirm_delete)
                     else:
                         self.table_info[i]["_error_number"] +=1
                         msg = "密碼錯誤"
-        return [Famcy.UpdateAlert(alert_message=msg), Famcy.UpdateBlockHtml(target=self.card2)]
-
-    # def delete_info(self, submission_obj, info_list):
-    #     return Famcy.UpdatePrompt(target=self.p_card_delete)
-
-    # def update_delete(self, submission_obj, info_list):
-    #     _info_list = submission_obj.origin.find_parent(submission_obj.origin, "FPromptCard").last_card["info_list"]
-    #     print("_info_list",_info_list)
-    #     print(_info_list.info_list)
-    #     msg = "資料填寫有誤"
-    #     if len(_info_list.info_list) > 0 and len(_info_list[0]) > 0:
-    #         _id = _info_list[0][0]
-    #         license_num = "XXXXXX"
-
-    #         if self.post_modify(_id, license_num):
-    #             self.get_season_data()
-    #             msg = "成功刪除資料"
-
-    #         return [Famcy.UpdateRemoveElement(prompt_flag=True), Famcy.UpdateBlockHtml(target=self.card_2), Famcy.UpdateAlert(alert_message=msg, target=self.card_2)]
-    #     return Famcy.UpdateAlert(alert_message=msg, target=self.p_del_card)
+        return [Famcy.UpdateAlert(alert_message=msg),Famcy.UpdateBlockHtml(target=self.card2)]
+        
+    def delete_execute(self, submission_obj, info_list):
+        msg=""
+        for i in range(0, len(self.table_info)):
+            if self.store_delete[0] == self.table_info[i]["_id"]:
+                del self.table_info[i]
+                del self.used_password[str(self.store_delete[0])]
+        return [Famcy.UpdateRemoveElement(prompt_flag=True),Famcy.UpdateRemoveElement(prompt_flag=True),Famcy.UpdateBlockHtml(target=self.card2)]
     # ====================================================
     # ====================================================
         
@@ -399,4 +459,4 @@ class ProjectPage(Famcy.FamcyPage):
     # ====================================================
 
    
-ProjectPage.register("/ProjectPage", Famcy.ClassicStyle(), permission_level=0, background_thread=True)
+StartPage.register("/startFamcy", Famcy.ClassicStyle(), permission_level=0, background_thread=True)
