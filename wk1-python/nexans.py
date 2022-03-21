@@ -6,13 +6,13 @@ Learning Materials:
 
 Brief Introduction on Nexuni Ecosystem
 ---------------------------------------
-+   NexDevice: Every single embedded device
++ 	NexDevice: Every single embedded device
 +       |
 +    NexSite : Every Nexuni site
-+       |
-+   NexDomain: Every LAN domain or Industry type
-+       |
-+     Nexuni : Nexuni Universe
++		|
++	NexDomain: Every LAN domain or Industry type
++		|
++	  Nexuni : Nexuni Universe
 ---------------------------------------
 
 The hierarchy shows the relationship
@@ -54,32 +54,21 @@ class NexDevice(object):
 		start_service(srv)
 		stop_service(srv)
 	"""
-	def __init__(self,dump_data):
+	def __init__(self,dump_string):
 		# Constructor dummy initialization
-		self.ip_address=dump_data["ip_address"]
-		self.os=dump_data["os"]
-		self.arch=dump_data["arch"]
-		self.attery=dump_data["battery"]
-
-
-		# self.services=list()
-		# for i in dump_data["services"]:
-		#   self.services.append(i)
-		#   print(self.services)
-		self.services = {}
-		for item in dump_data["services"]:
-			for srv, info in item.items():
-				self.services[srv] = info
-		# print(self.services)
-
+		self.ip_address=dump_string["ip_address"]
+		self.os=dump_string["os"]
+		self.arch=dump_string["arch"]
+		self.attery=dump_string["battery"]
+		self.service=list()
 		self.services = {
-			srv: info for item in dump_data["services"] for srv, info in item.items()
+			srv: info for item in dump_string["services"] for srv, info in item.items()
 		}
-
+		print(self.services)
 
 
 	@classmethod
-	def create_nexdevice_from_dump(cls,dump_data):
+	def create_nexdevice_from_dump(cls,dump_string):
 		"""
 		Create a NexDevice object based on deviceinfo
 		encoded in dump_string.
@@ -106,7 +95,7 @@ class NexDevice(object):
 			a docker version string with the following 
 			format: '-{OS}-{ARCH}'
 		"""
-		return "-{self.OS}-{self.arch}"
+		return f"-{self.OS}-{self.arch}"
 
 	def get_ip_search_range(self,subnet):
 		"""
@@ -119,26 +108,10 @@ class NexDevice(object):
 		Output:
 			Usable Host IP Range: ("192.168.2.1", "192.168.2.254")
 		"""
-		def _range_from_indicator(self, indicator):
-		if '-' in indicator:
-			start, end = map(
-				lambda x: int(netaddr.IPAddress(x)),
-				indicator.split('-', 1)
-			)
-		elif '/' in indicator:
-			ipnet = netaddr.IPNetwork(indicator)
-			start = int(ipnet.ip)
-			end = start+ipnet.size-1
-		else:
-			start = int(netaddr.IPAddress(indicator))
-			end = start
+		start = ".".join([ str(int(mask) & int(ip)) for (mask, ip) in zip(subnet.split("."), self.ip_address.split("."))])
+		end = ".".join([ str(~int(mask) & 255 | int(ip)) for (mask, ip) in zip(subnet.split("."), self.ip_address.split("."))])
 
-		if (not (start >= 0 and start <= 0xFFFFFFFF)) or \
-		   (not (end >= 0 and end <= 0xFFFFFFFF)):
-			LOG.error('%s - {%s} invalid IPv4 indicator',self.name, indicator)
-			return None, None
-
-		return start,end
+		return (str(ipaddress.IPv4Address(start)+1), str(ipaddress.IPv4Address(end)-1))
 
 	def get_service_status(self,srv):
 		"""
@@ -148,7 +121,11 @@ class NexDevice(object):
 		Output:
 			current service status (Bool)
 		"""
-		pass
+		if srv in self.services:
+			return self.services[srv]["status"]
+
+		else:
+			return f"Service({srv}) not exist."
 
 	def start_service(self,srv):
 		"""
@@ -157,7 +134,10 @@ class NexDevice(object):
 		Input:
 			srv: service name
 		"""
-		pass
+		if srv in self.services:
+			self.services[srv]["status"]=True
+		else:
+			print("Service({srv}) not exist.")
 
 	def stop_service(self,srv):
 		"""
@@ -166,7 +146,12 @@ class NexDevice(object):
 		Input:
 			srv: service name
 		"""
-		pass
+		if srv in self.services:
+			self.services[srv]["status"] = False
+		else:
+			print("Service({srv}) not exist.")
+
+
 
 import json
 
